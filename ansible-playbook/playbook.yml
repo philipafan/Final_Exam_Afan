@@ -1,0 +1,44 @@
+---
+- name: Configure Enterprise Service and Monitoring Tool
+  hosts: all
+  become: true
+  vars_files:
+    - config.yaml
+
+  tasks:
+    # 1. Install Apache
+    - name: Install Apache (Debian/CentOS)
+      package:
+        name: "{{ apache_package }}"
+        state: present
+
+    - name: Ensure Apache service is running and enabled
+      service:
+        name: "{{ apache_service }}"
+        state: started
+        enabled: yes
+
+    # 2. Install Prometheus
+    - name: Add Prometheus repository (Debian)
+      ansible.builtin.apt:
+        name: prometheus
+      when: ansible_os_family == "Debian"
+
+    - name: Install Prometheus on CentOS
+      yum:
+        name: prometheus
+        state: present
+      when: ansible_os_family == "RedHat"
+
+    - name: Ensure Prometheus is running and enabled
+      service:
+        name: prometheus
+        state: started
+        enabled: yes
+
+    # 3. Configure MOTD
+    - name: Update MOTD file
+      template:
+        src: templates/motd.j2
+        dest: /etc/motd
+        mode: "0644"
